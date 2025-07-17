@@ -85,6 +85,17 @@ class Deer(Animal):
         if random.random() > 0.4:
             self.direction = self.get_random_direction()
 
+    def reproduce(self):
+        """
+        Returns a new Deer with mutated traits based on this one's attributes.
+        """
+        return Deer(
+            color=self.color,
+            sight=mutate_trait(self.sight),
+            speed=mutate_trait(self.speed),
+            lifespan=self.lifespan
+        )
+
 class Wolf(Animal):
     def move(self):
         self.steps += 1
