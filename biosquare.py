@@ -54,6 +54,15 @@ class Animal():
     def draw(self):
         pygame.draw.circle(screen, self.color, self.position, 10)
 
+def mutate_trait(value, mutation_rate=0.1, mutation_strength=0.1):
+    """
+    Applies random mutation to a given trait.
+    Returns the modified value or original depending on mutation rate.
+    """
+    if random.random() < mutation_rate:
+        return value + random.uniform(-mutation_strength, mutation_strength)
+    return value
+
 class Deer(Animal):
     def move(self):
         wolves_in_sight = self.get_animals_in_sight(wolves)
