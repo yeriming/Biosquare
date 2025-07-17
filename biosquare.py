@@ -147,7 +147,8 @@ while running:
     screen.fill('white')
 
     while len(deers) < number_deers:
-        deers.append(Deer(color='brown', sight=200, speed=10, lifespan=None))
+        parent = random.choice(deers)
+        deers.append(parent.reproduce())
 
     for deer in deers:
         deer.move()
