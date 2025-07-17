@@ -54,7 +54,7 @@ class Animal():
     def draw(self):
         pygame.draw.circle(screen, self.color, self.position, 10)
 
-def mutate_trait(value, mutation_rate=0.1, mutation_strength=0.1):
+def mutate_trait(value, mutation_rate=0.3, mutation_strength=0.5):
     """
     Applies random mutation to a given trait.
     Returns the modified value or original depending on mutation rate.
@@ -159,16 +159,17 @@ def log_population_stats(step, deers, wolves, log_list):
 
 log = []
 step = 0
+max_steps = 500
 
 pygame.init()
 
 square = 1000
 screen = pygame.display.set_mode((square,square))
 
-number_deers = 10
+number_deers = 50
 deers = [Deer(color='brown', sight=200, speed=10, lifespan=None)]
 
-number_wolves = 4
+number_wolves = 20
 wolves = []
 for n in range(number_wolves):
     wolves.append(Wolf(color='grey', sight=300, speed=15, lifespan=100))
@@ -176,7 +177,7 @@ for n in range(number_wolves):
 log_population_stats(step, deers, wolves, log)
 
 running = True
-while running:
+while running and step < max_steps:
     screen.fill('white')
 
     while len(deers) < number_deers:
@@ -202,7 +203,7 @@ while running:
         running = False
 
     pygame.display.flip()
-    pygame.time.wait(1000) # milliseconds
+    pygame.time.wait(10) # milliseconds
 
     log_population_stats(step, deers, wolves, log)
     step += 1
