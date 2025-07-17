@@ -1,5 +1,6 @@
 import pygame
 import random
+import os
 import csv
 
 class Animal():
@@ -192,8 +193,12 @@ while running and step < max_steps:
     screen.fill('white')
 
     if deers:
-        for _ in range(number_deers - len(deers)):
-            parent = random.choice(deers)
+        ranked_deers = sorted(deers, key=lambda d: d.speed + d.sight, reverse=True)
+        top_n = max(1, len(ranked_deers) // 3)  # 상위 1/3만 번식 대상
+        parents = ranked_deers[:top_n]
+
+        while len(deers) < number_deers:
+            parent = random.choice(parents)
             deers.append(parent.reproduce())
 
     for deer in deers:
@@ -223,8 +228,6 @@ while running and step < max_steps:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-
-import csv
 
 output_folder = "/Users/yeriming/Downloads/Biosquare/Log"
 file_path = get_file(output_folder)
