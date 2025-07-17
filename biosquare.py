@@ -51,15 +51,6 @@ class Animal():
         closest_animal = animals[distances.index(min(distances))]
         return closest_animal
 
-    def mutate_trait(value, mutation_rate=0.1, mutation_strength=0.1):
-        """
-        Slightly mutate a given trait value with a certain probability.
-        Used to simulate genetic variation during reproduction.
-        """
-        if random.random() < mutation_rate:
-            return value + random.uniform(-mutation_strength, mutation_strength)
-        return value
-
     def draw(self):
         pygame.draw.circle(screen, self.color, self.position, 10)
 
@@ -107,18 +98,6 @@ class Wolf(Animal):
         if random.random() > 0.6:
             self.direction = self.get_random_direction()
 
-    def reproduce(self):
-        """
-        Create a new Wolf instance based on this wolf,
-        with slightly mutated sight and speed to simulate evolution.
-        """
-        return Wolf(
-            color=self.color,
-            sight=mutate_trait(self.sight),
-            speed=mutate_trait(self.speed),
-            lifespan=self.lifespan,
-            position=self.position
-        )
 pygame.init()
 
 square = 1000
