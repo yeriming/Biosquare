@@ -183,7 +183,7 @@ square = 1000
 screen = pygame.display.set_mode((square,square))
 
 number_deers = 50
-deers = [Deer(color='brown', sight=200, speed=10, lifespan=None) for _ in range(number_deers)]
+deers = [Deer(color='brown', sight=250, speed=16, lifespan=None) for _ in range(number_deers)]
 
 number_wolves = 20
 wolves = []
@@ -203,16 +203,16 @@ while running and step < max_steps:
 
         new_deers = []
         for parent in parents:
-            if random.random() < 0.2:  # 번식 확률 10%
+            fitness = (parent.speed + parent.sight) / 50
+            if random.random() < min(fitness, 1.0):
                 new_deers.append(parent.reproduce())
-        deers.extend(new_deers)
 
     for deer in deers:
         deer.move()
         deer.draw()
 
     if len(deers) == 0:
-        print("❌ All deers extinct.")
+        print("All deers extinct.")
         running = False
         break
 
