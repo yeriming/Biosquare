@@ -166,7 +166,7 @@ square = 1000
 screen = pygame.display.set_mode((square,square))
 
 number_deers = 10
-deers = []
+deers = [Deer(color='brown', sight=200, speed=10, lifespan=None)]
 
 number_wolves = 4
 wolves = []
