@@ -191,10 +191,10 @@ running = True
 while running and step < max_steps:
     screen.fill('white')
 
-if deers:
-    while len(deers) < number_deers:
-        parent = random.choice(deers)
-        deers.append(parent.reproduce())
+    if deers:
+        for _ in range(number_deers - len(deers)):
+            parent = random.choice(deers)
+            deers.append(parent.reproduce())
 
     for deer in deers:
         deer.move()
@@ -211,7 +211,7 @@ if deers:
         if wolf.steps == wolf.lifespan:
             wolves.remove(wolf)
 
-    if len(wolves) == 0:
+    if len(wolves) == 0 or len(deers) == 0:
         running = False
 
     pygame.display.flip()
