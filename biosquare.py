@@ -107,6 +107,17 @@ class Wolf(Animal):
         if random.random() > 0.6:
             self.direction = self.get_random_direction()
 
+    def reproduce(self):
+        """
+        Returns a new Wolf with mutated traits based on this one's attributes.
+        """
+        return Wolf(
+            color=self.color,
+            sight=mutate_trait(self.sight),
+            speed=mutate_trait(self.speed),
+            lifespan=self.lifespan
+        )
+
 pygame.init()
 
 square = 1000
