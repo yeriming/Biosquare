@@ -1,6 +1,6 @@
 import pygame
 import random
-import os
+import csv
 
 class Animal():
     def __init__(self, sight, speed, lifespan, color='black', position=None):
@@ -191,6 +191,7 @@ running = True
 while running and step < max_steps:
     screen.fill('white')
 
+if deers:
     while len(deers) < number_deers:
         parent = random.choice(deers)
         deers.append(parent.reproduce())
@@ -228,11 +229,13 @@ import csv
 output_folder = "/Users/yeriming/Downloads/Biosquare/Log"
 file_path = get_file(output_folder)
 
-with open(file_path, "w", newline="") as csvfile:
-    writer = csv.DictWriter(csvfile, fieldnames=log[0].keys())
-    writer.writeheader()
-    writer.writerows(log)
-
-print(f"Saved log to {file_path}")
+if log:
+    with open(file_path, "w", newline="") as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=log[0].keys())
+        writer.writeheader()
+        writer.writerows(log)
+    print(f"Saved log to {file_path}")
+else:
+    print("Not saved")
 
 pygame.quit()
