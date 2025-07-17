@@ -214,15 +214,15 @@ while running and step < max_steps:
         wolf.draw()
         closest_deer = wolf.get_closest_animal(deers)
         if closest_deer is not None and wolf.position.distance_to(closest_deer.position) < 20:
-            deers.remove(closest_deer)
-            wolf.steps = 0
-            if closest_deer in deers:
-                deers.remove(closest_deer)
-                wolf.hunts += 1  # 사슴 잡은 횟수 증가
-                wolf.steps = 0
-                if wolf.hunts >= 2:  # 사슴을 2마리 이상 잡은 경우만 번식
-                    wolves.append(wolf.reproduce())
-                    wolf.hunts = 0  # 초기화
+            catch_distance = wolf.speed * 1.5  # 속도 기반 포식 범위
+            if wolf.position.distance_to(closest_deer.position) < catch_distance:
+                if closest_deer in deers:
+                    deers.remove(closest_deer)
+                    wolf.hunts += 1
+                    wolf.steps = 0
+                    if wolf.hunts >= 2: #사슴을 2마리 이상 잡은 경우에만 번식
+                        wolves.append(wolf.reproduce())
+                        wolf.hunts = 0
         if wolf.steps == wolf.lifespan:
             wolves.remove(wolf)
 
