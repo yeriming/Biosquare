@@ -160,7 +160,7 @@ while running:
         if wolf.position.distance_to(closest_deer.position) < 20:
             deers.remove(closest_deer)
             wolf.steps = 0
-            wolves.append(Wolf(color='grey', sight=300, speed=15, lifespan=100, position=wolf.position))
+            wolves.append(wolf.reproduce())
         if wolf.steps == wolf.lifespan:
             wolves.remove(wolf)
 
