@@ -51,6 +51,15 @@ class Animal():
         closest_animal = animals[distances.index(min(distances))]
         return closest_animal
 
+    def mutate_trait(value, mutation_rate=0.1, mutation_strength=0.1):
+        """
+        Slightly mutate a given trait value with a certain probability.
+        Used to simulate genetic variation during reproduction.
+        """
+        if random.random() < mutation_rate:
+            return value + random.uniform(-mutation_strength, mutation_strength)
+        return value
+
     def draw(self):
         pygame.draw.circle(screen, self.color, self.position, 10)
 
