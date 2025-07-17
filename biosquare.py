@@ -183,7 +183,7 @@ square = 1000
 screen = pygame.display.set_mode((square,square))
 
 number_deers = 50
-deers = [Deer(color='brown', sight=200, speed=10, lifespan=None)]
+deers = [Deer(color='brown', sight=200, speed=10, lifespan=None) for _ in range(number_deers)]
 
 number_wolves = 20
 wolves = []
@@ -201,14 +201,21 @@ while running and step < max_steps:
         top_n = max(1, len(ranked_deers) // 3)  # 상위 1/3만 번식 대상
         parents = ranked_deers[:top_n]
 
-        while len(deers) < number_deers:
-            parent = random.choice(parents)
-            deers.append(parent.reproduce())
+        new_deers = []
+        for parent in parents:
+            if random.random() < 0.2:  # 번식 확률 10%
+                new_deers.append(parent.reproduce())
+        deers.extend(new_deers)
 
     for deer in deers:
         deer.move()
         deer.draw()
-        
+
+    if len(deers) == 0:
+        print("❌ All deers extinct.")
+        running = False
+        break
+
     for wolf in wolves:
         wolf.move()
         wolf.draw()
