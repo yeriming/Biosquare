@@ -1,71 +1,86 @@
+# Add mutation tracking and visualization (fixed)
 import pygame
 import random
 import os
 import csv
+import matplotlib.pyplot as plt
+
+MAX_DEERS = 150
+MAX_WOLVES = 100
+square = 1000
+screen = pygame.display.set_mode((square,square))
+
+mutation_stats = {
+    "step": [],
+    "mutation_count": [],
+    "mutation_rate_actual": [],
+    "mutation_speed_avg": [],
+    "mutation_sight_avg": []
+}
+
+mutation_counter = 0
+mutation_speed_total = 0
+mutation_sight_total = 0
+mutation_events = 0
+
+def reset_mutation_stats():
+    global mutation_counter, mutation_speed_total, mutation_sight_total, mutation_events
+    mutation_counter = 0
+    mutation_speed_total = 0
+    mutation_sight_total = 0
+    mutation_events = 0
 
 class Animal():
-    def __init__(self, sight, speed, lifespan, color='black', position=None):
+    def __init__(self, sight, speed, lifespan, generation=0, color='black', position=None):
         self.sight = sight
-        self.steps = 0
         self.speed = speed
-        self.direction = self.get_random_direction()        
-        self.lifespan = lifespan
+        self.steps = 0
+        self.direction = self.get_random_direction()
+        self.lifespan = lifespan if lifespan is not None else 100
         self.color = color
-        self.position = position
-        if position is None:
-            self.position = self.get_random_position()
+        self.position = position if position else self.get_random_position()
+        self.generation = generation
 
     def get_modular_position(self):
-        if self.position.x < 0: 
-            self.position.x += square
-        if self.position.x > square:
-            self.position.x -= square
-        if self.position.y < 0:
-            self.position.y += square
-        if self.position.y > square:
-            self.position.y -= square
+        if self.position.x < 0: self.position.x += square
+        if self.position.x > square: self.position.x -= square
+        if self.position.y < 0: self.position.y += square
+        if self.position.y > square: self.position.y -= square
 
     def get_random_position(self):
-        x = random.random()*square
-        y = random.random()*square
-        position = pygame.Vector2(x,y)
-        return position
+        return pygame.Vector2(random.random()*square, random.random()*square)
 
     def get_random_direction(self):
         x = random.randint(-1, 1)
         y = random.randint(-1, 1)
-        direction = pygame.Vector2(x,y)
+        direction = pygame.Vector2(x, y)
         if direction.length() > 0.0:
             direction = direction.normalize()
         return direction
 
     def get_animals_in_sight(self, animals):
-        animals_in_sight = []
-        for animal in animals:
-            if self.position.distance_to(animal.position) < self.sight:
-                animals_in_sight.append(animal)
-        return animals_in_sight
+        return [a for a in animals if a != self and self.position.distance_to(a.position) < self.sight]
 
     def get_closest_animal(self, animals):
-        if not animals:
-            return None
-        distances = [self.position.distance_to(animal.position) for animal in animals]
-        closest_animal = animals[distances.index(min(distances))]
-        return closest_animal
+        return min((a for a in animals if a != self), key=lambda a: self.position.distance_to(a.position), default=None)
 
     def draw(self):
         pygame.draw.circle(screen, self.color, self.position, 10)
 
 def mutate_trait(value, mutation_rate=0.3, mutation_strength=0.5):
-    """
-    Applies random mutation to a given trait.
-    Returns the modified value or original depending on mutation rate.
-    """
+    global mutation_counter, mutation_speed_total, mutation_sight_total, mutation_events
     if random.random() < mutation_rate:
-        return value + random.uniform(-mutation_strength, mutation_strength)
+        mutation_counter += 1
+        delta = random.uniform(-mutation_strength, mutation_strength)
+        mutation_events += 1
+        if value < 50:  # speed typically ~10-20
+            mutation_speed_total += abs(delta)
+        else:           # sight typically ~150-300
+            mutation_sight_total += abs(delta)
+        return max(0.1, value + delta)
     return value
 
-def get_file(folder, base_name="population_log", extension=".csv"):
+def get_file(folder, base_name="file", extension=".txt"):
     os.makedirs(folder, exist_ok=True)
     i = 1
     while True:
@@ -77,20 +92,20 @@ def get_file(folder, base_name="population_log", extension=".csv"):
 
 class Deer(Animal):
     def move(self):
+        self.steps += 1
         wolves_in_sight = self.get_animals_in_sight(wolves)
-        if len(wolves_in_sight) > 0:
+        if wolves_in_sight:
             self.set_flee_direction(wolves_in_sight)
-            self.position += self.speed*self.direction
         else:
             self.set_wander_direction()
-            self.position += self.speed*self.direction
+        self.position += self.speed * self.direction
         self.get_modular_position()
 
     def set_flee_direction(self, predators):
         direction = pygame.Vector2(0, 0)
         for predator in predators:
             metric = self.position.distance_to(predator.position)
-            direction += (self.position - predator.position)/metric
+            direction += (self.position - predator.position) / metric
         self.direction = direction
 
     def set_wander_direction(self):
@@ -98,14 +113,12 @@ class Deer(Animal):
             self.direction = self.get_random_direction()
 
     def reproduce(self):
-        """
-        Returns a new Deer with mutated traits based on this one's attributes.
-        """
         return Deer(
             color=self.color,
             sight=mutate_trait(self.sight),
             speed=mutate_trait(self.speed),
-            lifespan=self.lifespan
+            lifespan=self.lifespan,
+            generation=self.generation + 1
         )
 
 class Wolf(Animal):
@@ -116,149 +129,105 @@ class Wolf(Animal):
     def move(self):
         self.steps += 1
         deers_in_sight = self.get_animals_in_sight(deers)
-        if len(deers_in_sight) > 0:
+        if deers_in_sight:
             self.set_chase_direction(deers_in_sight)
-            self.position += self.speed*self.direction
         else:
             self.set_wander_direction()
-            self.position += self.speed*self.direction
+        self.position += self.speed * self.direction
+        self.get_modular_position()
 
     def set_chase_direction(self, preys):
-        prey = self.get_closest_animal(preys)
-        direction = prey.position - self.position
-        if direction.length() > 0.0:
-            direction = direction.normalize()
-        self.direction = direction
+        closest = self.get_closest_animal(preys)
+        if closest:
+            direction = closest.position - self.position
+            if direction.length() > 0:
+                self.direction = direction.normalize()
 
     def set_wander_direction(self):
         if random.random() > 0.6:
             self.direction = self.get_random_direction()
 
     def reproduce(self):
-        """
-        Returns a new Wolf with mutated traits based on this one's attributes.
-        """
         return Wolf(
             color=self.color,
             sight=mutate_trait(self.sight),
             speed=mutate_trait(self.speed),
-            lifespan=self.lifespan
+            lifespan=self.lifespan,
+            generation=self.generation + 1
         )
-
-def print_population_stats(step, deers, wolves):
-    def avg(attr, animals):
-        return sum(getattr(a, attr) for a in animals) / len(animals) if animals else 0
-
-    deer_speed = avg('speed', deers)
-    deer_sight = avg('sight', deers)
-    wolf_speed = avg('speed', wolves)
-    wolf_sight = avg('sight', wolves)
-
-    print(f"[Step {step}]")
-    print(f"  🦌 Deer  | Count: {len(deers):2} | Avg Speed: {deer_speed:.2f} | Avg Sight: {deer_sight:.2f}")
-    print(f"  🐺 Wolf  | Count: {len(wolves):2} | Avg Speed: {wolf_speed:.2f} | Avg Sight: {wolf_sight:.2f}")
-    print("------------------------------------------------------------")
 
 def log_population_stats(step, deers, wolves, log_list):
     def avg(attr, animals):
         return sum(getattr(a, attr) for a in animals) / len(animals) if animals else 0
-
     log_list.append({
         "step": step,
         "deer_count": len(deers),
         "deer_speed_avg": avg("speed", deers),
         "deer_sight_avg": avg("sight", deers),
+        "deer_fitness_avg": avg("speed", deers) + avg("sight", deers),
+        "deer_generation_avg": avg("generation", deers),
         "wolf_count": len(wolves),
         "wolf_speed_avg": avg("speed", wolves),
-        "wolf_sight_avg": avg("sight", wolves)
+        "wolf_sight_avg": avg("sight", wolves),
+        "wolf_fitness_avg": avg("speed", wolves) + avg("sight", wolves),
+        "wolf_generation_avg": avg("generation", wolves)
     })
 
 log = []
+deers = [Deer(color='brown', sight=random.uniform(150, 200), speed=random.uniform(10, 15), lifespan=100) for _ in range(60)]
+wolves = [Wolf(color='grey', sight=random.uniform(250, 300), speed=random.uniform(15, 20), lifespan=100) for _ in range(20)]
+
+running = True
 step = 0
 max_steps = 500
 
-pygame.init()
-
-square = 1000
-screen = pygame.display.set_mode((square,square))
-
-number_deers = 50
-deers = []
-for n in range(number_deers):
-    deers.append(Deer(
-        color='brown',
-        sight=random.uniform(180, 250),
-        speed=random.uniform(12, 17),
-        lifespan=None
-    ))
-
-number_wolves = 20
-wolves = []
-for n in range(number_wolves):
-    wolves.append(Wolf(
-        color='grey',
-        sight=random.uniform(250, 350),
-        speed=random.uniform(13, 18),
-        lifespan=100
-    ))
-
-log_population_stats(step, deers, wolves, log)
-
-running = True
 while running and step < max_steps:
     screen.fill('white')
-
-    if deers:
-        ranked_deers = sorted(deers, key=lambda d: d.speed + d.sight, reverse=True)
-        top_n = max(1, len(ranked_deers) // 3)  # 상위 1/3만 번식 대상
-        parents = ranked_deers[:top_n]
-
-        new_deers = []
-        for parent in parents:
-            fitness = (parent.speed + parent.sight) / 50
-            if random.random() < min(fitness, 1.0):
-                new_deers.append(parent.reproduce())
 
     for deer in deers:
         deer.move()
         deer.draw()
 
-    if len(deers) == 0:
-        print("All deers extinct.")
-        running = False
-        break
-
-    for wolf in wolves:
+    for wolf in wolves[:]:
         wolf.move()
         wolf.draw()
-        closest_deer = wolf.get_closest_animal(deers)
-        if closest_deer is not None and wolf.position.distance_to(closest_deer.position) < 20:
-            catch_distance = wolf.speed * 1.5  # 속도 기반 포식 범위
-            if wolf.position.distance_to(closest_deer.position) < catch_distance:
-                if closest_deer in deers:
-                    deers.remove(closest_deer)
-                    wolf.hunts += 1
-                    wolf.steps = 0
-                    if wolf.hunts >= 2: #사슴을 2마리 이상 잡은 경우에만 번식
-                        wolves.append(wolf.reproduce())
-                        wolf.hunts = 0
-        if wolf.steps == wolf.lifespan:
+        closest = wolf.get_closest_animal(deers)
+        if closest and wolf.position.distance_to(closest.position) < wolf.speed * 1.5:
+            if closest in deers:
+                deers.remove(closest)
+                wolf.hunts += 1
+                wolf.steps = 0
+        if wolf.hunts >= 1 and wolf.steps >= wolf.lifespan // 4:
+            if len(wolves) < MAX_WOLVES:
+                wolves.append(wolf.reproduce())
+        if wolf.steps >= wolf.lifespan:
             wolves.remove(wolf)
 
-    required_deers = len(wolves) * 2
-    if len(deers) < required_deers:
-        # 부족한 사슴 수 만큼, 랜덤 늑대 제거
-        excess_wolves = len(wolves) - (len(deers) // 2)
-        if excess_wolves > 0:
-            dying_wolves = random.sample(wolves, excess_wolves)
-            for wolf in dying_wolves:
-                wolves.remove(wolf)
+    if step % 10 == 0:
+        reset_mutation_stats()
+        deers = sorted(deers, key=lambda d: d.speed + d.sight, reverse=True)
+        top_deers = [d for d in deers[:len(deers)//3] if d.steps >= 10]
+        new_deers = []
+        for parent in top_deers:
+            if len(deers) + len(new_deers) < MAX_DEERS:
+                new_deers.append(parent.reproduce())
+        deers.extend(new_deers)
 
-    if len(wolves) == 0 or len(deers) == 0:
-        running = False
+        # Log mutation stats
+        mutation_stats["step"].append(step)
+        mutation_stats["mutation_count"].append(mutation_counter)
+        mutation_stats["mutation_rate_actual"].append(mutation_counter / max(1, len(new_deers)*2))
+        mutation_stats["mutation_speed_avg"].append(mutation_speed_total / max(1, mutation_events))
+        mutation_stats["mutation_sight_avg"].append(mutation_sight_total / max(1, mutation_events))
+
+    if len(wolves) > len(deers) * 2:
+        wolves = wolves[:len(deers)*2]
+    if len(deers) > len(wolves) * 4:
+        if len(wolves) < MAX_WOLVES:
+            wolves.append(Wolf(color='grey', sight=random.uniform(250, 300), speed=random.uniform(15, 20), lifespan=100))
 
     pygame.display.flip()
-    pygame.time.wait(200) # milliseconds
+    pygame.time.wait(200)
 
     log_population_stats(step, deers, wolves, log)
     step += 1
@@ -267,16 +236,20 @@ while running and step < max_steps:
         if event.type == pygame.QUIT:
             running = False
 
-output_folder = "/Users/yeriming/Downloads/Biosquare/Log"
-file_path = get_file(output_folder)
+# Save mutation plot
+mutation_folder = "/Users/yeriming/Downloads/Biosquare/Mutation"
+mutation_path = get_file(mutation_folder, base_name="mutation_plot", extension=".png")
 
-if log:
-    with open(file_path, "w", newline="") as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=log[0].keys())
-        writer.writeheader()
-        writer.writerows(log)
-    print(f"Saved log to {file_path}")
-else:
-    print("Not saved")
+plt.figure()
+plt.plot(mutation_stats["step"], mutation_stats["mutation_rate_actual"], label="Mutation Rate")
+plt.plot(mutation_stats["step"], mutation_stats["mutation_speed_avg"], label="Avg Speed Mutation")
+plt.plot(mutation_stats["step"], mutation_stats["mutation_sight_avg"], label="Avg Sight Mutation")
+plt.xlabel("Step")
+plt.ylabel("Mutation Metric")
+plt.title("Mutation Trends Over Time")
+plt.legend()
+plt.grid(True)
+plt.savefig(mutation_path)
+print(f"Saved mutation plot to: {mutation_path}")
 
 pygame.quit()
