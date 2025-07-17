@@ -107,6 +107,18 @@ class Wolf(Animal):
         if random.random() > 0.6:
             self.direction = self.get_random_direction()
 
+    def reproduce(self):
+        """
+        Create a new Wolf instance based on this wolf,
+        with slightly mutated sight and speed to simulate evolution.
+        """
+        return Wolf(
+            color=self.color,
+            sight=mutate_trait(self.sight),
+            speed=mutate_trait(self.speed),
+            lifespan=self.lifespan,
+            position=self.position
+        )
 pygame.init()
 
 square = 1000
