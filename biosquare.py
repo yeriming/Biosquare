@@ -183,12 +183,24 @@ square = 1000
 screen = pygame.display.set_mode((square,square))
 
 number_deers = 50
-deers = [Deer(color='brown', sight=250, speed=16, lifespan=None) for _ in range(number_deers)]
+deers = []
+for n in range(number_deers):
+    deers.append(Deer(
+        color='brown',
+        sight=random.uniform(180, 250),
+        speed=random.uniform(12, 17),
+        lifespan=None
+    ))
 
 number_wolves = 20
 wolves = []
 for n in range(number_wolves):
-    wolves.append(Wolf(color='grey', sight=300, speed=15, lifespan=100))
+    wolves.append(Wolf(
+        color='grey',
+        sight=random.uniform(250, 350),
+        speed=random.uniform(13, 18),
+        lifespan=100
+    ))
 
 log_population_stats(step, deers, wolves, log)
 
@@ -232,6 +244,15 @@ while running and step < max_steps:
                         wolf.hunts = 0
         if wolf.steps == wolf.lifespan:
             wolves.remove(wolf)
+
+    required_deers = len(wolves) * 2
+    if len(deers) < required_deers:
+        # 부족한 사슴 수 만큼, 랜덤 늑대 제거
+        excess_wolves = len(wolves) - (len(deers) // 2)
+        if excess_wolves > 0:
+            dying_wolves = random.sample(wolves, excess_wolves)
+            for wolf in dying_wolves:
+                wolves.remove(wolf)
 
     if len(wolves) == 0 or len(deers) == 0:
         running = False
