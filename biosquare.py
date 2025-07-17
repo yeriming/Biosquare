@@ -45,9 +45,9 @@ class Animal():
         return animals_in_sight
 
     def get_closest_animal(self, animals):
-        distances = []
-        for animal in animals:
-            distances.append(self.position.distance_to(animal.position))
+        if not animals:
+            return None
+        distances = [self.position.distance_to(animal.position) for animal in animals]
         closest_animal = animals[distances.index(min(distances))]
         return closest_animal
 
@@ -192,6 +192,10 @@ while running and step < max_steps:
         wolf.move()
         wolf.draw()
         closest_deer = wolf.get_closest_animal(deers)
+        if closest_deer is not None and wolf.position.distance_to(closest_deer.position) < 20:
+            deers.remove(closest_deer)
+            wolf.steps = 0
+            wolves.append(wolf.reproduce())
         if wolf.position.distance_to(closest_deer.position) < 20:
             deers.remove(closest_deer)
             wolf.steps = 0
