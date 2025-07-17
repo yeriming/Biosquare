@@ -129,6 +129,20 @@ class Wolf(Animal):
             lifespan=self.lifespan
         )
 
+def print_population_stats(step, deers, wolves):
+    def avg(attr, animals):
+        return sum(getattr(a, attr) for a in animals) / len(animals) if animals else 0
+
+    deer_speed = avg('speed', deers)
+    deer_sight = avg('sight', deers)
+    wolf_speed = avg('speed', wolves)
+    wolf_sight = avg('sight', wolves)
+
+    print(f"[Step {step}]")
+    print(f"  🦌 Deer  | Count: {len(deers):2} | Avg Speed: {deer_speed:.2f} | Avg Sight: {deer_sight:.2f}")
+    print(f"  🐺 Wolf  | Count: {len(wolves):2} | Avg Speed: {wolf_speed:.2f} | Avg Sight: {wolf_sight:.2f}")
+    print("------------------------------------------------------------")
+
 pygame.init()
 
 square = 1000
