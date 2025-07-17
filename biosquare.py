@@ -143,6 +143,23 @@ def print_population_stats(step, deers, wolves):
     print(f"  🐺 Wolf  | Count: {len(wolves):2} | Avg Speed: {wolf_speed:.2f} | Avg Sight: {wolf_sight:.2f}")
     print("------------------------------------------------------------")
 
+def log_population_stats(step, deers, wolves, log_list):
+    def avg(attr, animals):
+        return sum(getattr(a, attr) for a in animals) / len(animals) if animals else 0
+
+    log_list.append({
+        "step": step,
+        "deer_count": len(deers),
+        "deer_speed_avg": avg("speed", deers),
+        "deer_sight_avg": avg("sight", deers),
+        "wolf_count": len(wolves),
+        "wolf_speed_avg": avg("speed", wolves),
+        "wolf_sight_avg": avg("sight", wolves)
+    })
+
+log = []
+step = 0
+
 pygame.init()
 
 square = 1000
@@ -155,6 +172,8 @@ number_wolves = 4
 wolves = []
 for n in range(number_wolves):
     wolves.append(Wolf(color='grey', sight=300, speed=15, lifespan=100))
+
+log_population_stats(step, deers, wolves, log)
 
 running = True
 while running:
@@ -185,8 +204,18 @@ while running:
     pygame.display.flip()
     pygame.time.wait(1000) # milliseconds
 
+    log_population_stats(step, deers, wolves, log)
+    step += 1
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+import csv
+
+with open("population_log.csv", "w", newline="") as csvfile:
+    writer = csv.DictWriter(csvfile, fieldnames=log[0].keys())
+    writer.writeheader()
+    writer.writerows(log)
 
 pygame.quit()
