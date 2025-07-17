@@ -1,5 +1,6 @@
 import pygame
 import random
+import os
 
 class Animal():
     def __init__(self, sight, speed, lifespan, color='black', position=None):
@@ -62,6 +63,16 @@ def mutate_trait(value, mutation_rate=0.3, mutation_strength=0.5):
     if random.random() < mutation_rate:
         return value + random.uniform(-mutation_strength, mutation_strength)
     return value
+
+def get_file(folder, base_name="population_log", extension=".csv"):
+    os.makedirs(folder, exist_ok=True)
+    i = 1
+    while True:
+        filename = f"{base_name}_{i}{extension}"
+        path = os.path.join(folder, filename)
+        if not os.path.exists(path):
+            return path
+        i += 1
 
 class Deer(Animal):
     def move(self):
@@ -196,10 +207,6 @@ while running and step < max_steps:
             deers.remove(closest_deer)
             wolf.steps = 0
             wolves.append(wolf.reproduce())
-        if wolf.position.distance_to(closest_deer.position) < 20:
-            deers.remove(closest_deer)
-            wolf.steps = 0
-            wolves.append(wolf.reproduce())
         if wolf.steps == wolf.lifespan:
             wolves.remove(wolf)
 
@@ -207,7 +214,7 @@ while running and step < max_steps:
         running = False
 
     pygame.display.flip()
-    pygame.time.wait(10) # milliseconds
+    pygame.time.wait(200) # milliseconds
 
     log_population_stats(step, deers, wolves, log)
     step += 1
@@ -218,9 +225,14 @@ while running and step < max_steps:
 
 import csv
 
-with open("population_log.csv", "w", newline="") as csvfile:
+output_folder = "/Users/yeriming/Downloads/Biosquare/Log"
+file_path = get_file(output_folder)
+
+with open(file_path, "w", newline="") as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=log[0].keys())
     writer.writeheader()
     writer.writerows(log)
+
+print(f"Saved log to {file_path}")
 
 pygame.quit()
