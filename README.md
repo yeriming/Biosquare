@@ -6,7 +6,7 @@ This project is a Python-based evolutionary simulation that models predator-prey
 
 **This project was developed as a final assignment for the course**  
 **“Infinity and the Evolution of Intelligence”**  
-taught by **Professor Daniel Louis Nethery** at **Freie Universität Berlin (SoSe 2025)**.
+**taught by Professor Daniel Louis Nethery at Freie Universität Berlin (SoSe 2025)**.
 
 ---
 
