@@ -4,6 +4,7 @@ import random
 import os
 import csv
 import matplotlib.pyplot as plt
+import numpy as np
 
 MAX_DEERS = 150
 MAX_WOLVES = 100
@@ -11,6 +12,7 @@ square = 1000
 screen = pygame.display.set_mode((square,square))
 
 # Mutation tracking per species
+# Records number of mutations and average mutation strength per step.
 mutation_stats = {
     "step": [],
     "deer_mutation_count": [],
@@ -82,7 +84,12 @@ class Animal():
     def draw(self):
         pygame.draw.circle(screen, self.color, self.position, 10)
 
-def mutate_trait(value, species, mutation_rate=0.3, mutation_strength=0.5):
+# This function introduces a mutation into a genetic trait such as speed or sight.
+# Mutations occur with a certain probability (mutation rate) and change the trait by a small random amount (mutation strength).
+# The change is sampled from a normal distribution to allow both small increases and decreases.
+# This models how biological mutations introduce random variation in real populations.
+# If no mutation occurs (based on chance), the original trait value is returned unchanged.
+def mutate_trait(value, species, trait_type, mutation_rate=0.3, mutation_strength=0.5):
     global deer_mutation_counter, wolf_mutation_counter
     global deer_mutation_speed_total, deer_mutation_sight_total, deer_mutation_events
     global wolf_mutation_speed_total, wolf_mutation_sight_total, wolf_mutation_events
@@ -92,16 +99,16 @@ def mutate_trait(value, species, mutation_rate=0.3, mutation_strength=0.5):
         if species == 'deer':
             deer_mutation_counter += 1
             deer_mutation_events += 1
-            if value < 50:
+            if trait_type == 'speed':
                 deer_mutation_speed_total += abs(delta)
-            else:
+            elif trait_type == 'sight':
                 deer_mutation_sight_total += abs(delta)
         elif species == 'wolf':
             wolf_mutation_counter += 1
             wolf_mutation_events += 1
-            if value < 50:
+            if trait_type == 'speed':
                 wolf_mutation_speed_total += abs(delta)
-            else:
+            elif trait_type == 'sight':
                 wolf_mutation_sight_total += abs(delta)
         return max(0.1, value + delta)
     return value
@@ -138,11 +145,15 @@ class Deer(Animal):
         if random.random() > 0.4:
             self.direction = self.get_random_direction()
 
+# Deer reproduce if they have survived a certain number of steps without being caught.
+# The offspring inherits the parent's traits (speed and sight), with a chance for mutation.
+# This simulates trait inheritance and the accumulation of advantageous variations over time.
+# A new Deer object is returned and added to the population in the main loop.
     def reproduce(self):
         return Deer(
             color=self.color,
-            sight=mutate_trait(self.sight, species="deer"),
-            speed=mutate_trait(self.speed, species="deer"),
+            sight=mutate_trait(self.sight, 'deer', 'sight'),
+            speed=mutate_trait(self.speed, 'deer', 'speed'),
             lifespan=self.lifespan,
             generation=self.generation + 1
         )
@@ -173,15 +184,24 @@ class Wolf(Animal):
         if random.random() > 0.6:
             self.direction = self.get_random_direction()
 
+# Wolves can reproduce if they have survived long enough and hunted successfully.
+# Reproduction creates a new wolf with inherited traits (speed and sight), possibly mutated.
+# This models natural selection by allowing only the fittest individuals to pass on their genes.
+# The new wolf is returned as an object to be added to the population.
     def reproduce(self):
         return Wolf(
             color=self.color,
-            sight=mutate_trait(self.sight, species="wolf"),
-            speed=mutate_trait(self.speed, species="wolf"),
+            sight=mutate_trait(self.sight, 'wolf', 'sight'),
+            speed=mutate_trait(self.speed, 'wolf', 'speed'),
             lifespan=self.lifespan,
             generation=self.generation + 1
         )
 
+# This dictionary keeps track of population-level statistics across simulation steps.
+# For each time step, we record:
+# - The number of wolves and deer alive
+# - The average speed and sight for each species
+# This data helps visualize evolutionary trends over time (e.g., if speed increases).
 def log_population_stats(step, deers, wolves, log_list):
     def avg(attr, animals):
         return sum(getattr(a, attr) for a in animals) / len(animals) if animals else 0
@@ -207,6 +227,17 @@ running = True
 step = 0
 max_steps = 500
 
+# At each simulation step, wolves and deer are updated:
+# - Wolves that meet survival and hunting criteria may reproduce
+# - Deer that survive long enough may reproduce as well
+# Offspring inherit their parent's traits with possible mutations
+# All mutation events are counted and summarized for statistical analysis
+
+# After updating the population, we record:
+# - Total population counts
+# - Trait averages
+# - Mutation counts and averages
+# These records are stored for visualization in the final dashboard.
 while running and step < max_steps:
     screen.fill('white')
 
@@ -238,7 +269,13 @@ while running and step < max_steps:
             if len(deers) + len(new_deers) < MAX_DEERS:
                 new_deers.append(parent.reproduce())
         deers.extend(new_deers)
-        # Record mutation stats
+
+        # This dictionary records mutation activity during the simulation.
+        # For each step, we log:
+        # - How many mutations occurred
+        # - What percentage of the population mutated
+        # - The average size of the mutations for each trait (speed, sight)
+        # This allows students to analyze the role of mutation in evolution with actual data.
         mutation_stats["step"].append(step)
 
         mutation_stats["deer_mutation_count"].append(deer_mutation_counter)
@@ -249,7 +286,9 @@ while running and step < max_steps:
         mutation_stats["wolf_mutation_count"].append(wolf_mutation_counter)
         mutation_stats["wolf_mutation_rate"].append(wolf_mutation_counter / max(1, len(wolves)))
         mutation_stats["wolf_mutation_speed_avg"].append(wolf_mutation_speed_total / max(1, wolf_mutation_events))
-        mutation_stats["wolf_mutation_sight_avg"].append(wolf_mutation_sight_total / max(1, wolf_mutation_events))
+        mutation_stats["wolf_mutation_sight_avg"].append(
+            wolf_mutation_sight_total / wolf_mutation_events if wolf_mutation_events > 0 else np.nan
+        )
 
     if len(wolves) > len(deers) * 2:
         wolves = wolves[:len(deers)*2]
